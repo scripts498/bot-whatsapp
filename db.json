@@ -1,0 +1,18 @@
+{
+  "autorizados": [
+    "2753711599658@lid"
+  ],
+  "silenciados": {},
+  "bloqueioFrases": [
+    "fds",
+    "fdp",
+    "VSF",
+    "prr",
+    "PORRA",
+    "pourra",
+    "crlh",
+    "caralho"
+  ],
+  "bloqueioAudios": true,
+  "_ultimoQuiz": "26 estados + 1 Distrito Federal (27 no total)!"
+}
