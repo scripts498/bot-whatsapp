@@ -15,6 +15,7 @@ const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
 const pino = require("pino");
 const qrcode = require("qrcode-terminal");
+const { Sticker, StickerTypes } = require("wa-sticker-formatter");
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 // ─────────────────────────────────────────
@@ -534,11 +535,11 @@ async function startBot() {
 
       // ── Moderação de Grupos ──
       if (isGroup && !isMe) {
-        const body =
-          msg.message?.conversation ||
-          msg.message?.extendedTextMessage?.text ||
-          msg.message?.imageMessage?.caption ||
-          msg.message?.videoMessage?.caption || "";
+const body =
+  msg.message?.conversation ||
+  msg.message?.extendedTextMessage?.text ||
+  msg.message?.imageMessage?.caption ||
+  msg.message?.videoMessage?.caption || "";
 
         const autorizado = isAutorizado(db, sender, myJid);
         const isFigurinha = msgType === "stickerMessage";
@@ -621,6 +622,59 @@ async function startBot() {
       if (comando === "!ping") {
         await sock.sendMessage(from, { text: "🏓 Pong! Estou online e te vigiando... 👀" });
       }
+
+if (["!s", "!fig", "!sticker", "!figurinha"].includes(comando)) {
+  try {
+    const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
+    const quoted = contextInfo?.quotedMessage;
+    const quotedType = quoted ? getContentType(quoted) : null;
+
+    let mediaMsg = msg;
+    let mediaType = msgType;
+
+    if (quoted && ["imageMessage", "videoMessage"].includes(quotedType)) {
+      mediaMsg = {
+        key: {
+          remoteJid: from,
+          fromMe: false,
+          id: contextInfo.stanzaId,
+          participant: contextInfo.participant
+        },
+        message: quoted
+      };
+
+      mediaType = quotedType;
+    }
+
+    if (!["imageMessage", "videoMessage"].includes(mediaType)) {
+      await sock.sendMessage(from, {
+        text: "❌ Manda uma foto/vídeo com !fig ou responde uma mídia com !fig"
+      });
+      continue;
+    }
+
+    const buffer = await downloadMediaMessage(mediaMsg, "buffer", {});
+
+    const sticker = new Sticker(buffer, {
+      pack: STICKER_NOME,
+      author: STICKER_AUTOR,
+      type: StickerTypes.FULL,
+      quality: 70,
+      id: "isaacbot",
+      categories: ["🤖"]
+    });
+
+    const stickerBuffer = await sticker.toBuffer();
+
+    await sock.sendMessage(from, { sticker: stickerBuffer }, { quoted: msg });
+
+  } catch (e) {
+    console.log("Erro ao criar figurinha:", e);
+    await sock.sendMessage(from, {
+      text: `❌ Erro ao criar figurinha: ${e.message}`
+    });
+  }
+}
 
       // ── !menu ──
       if (comando === "!menu") {
